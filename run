@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+docker build -t give-me-cert-local .
+docker rm -f give-me-cert
+
+docker run -d --name give-me-cert --restart always \
+  --env-file .env \
+  -v ./certs:/certs \
+  --log-driver json-file --log-opt max-size=128k \
+give-me-cert-local
+
+docker logs -f give-me-cert

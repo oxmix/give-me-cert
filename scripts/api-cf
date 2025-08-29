@@ -1,0 +1,51 @@
+#!/usr/bin/env sh
+
+action=$1
+domain=$2
+content=$3
+endpoint="https://api.cloudflare.com/client/v4"
+auth_email=${DNS_CF_ACCOUNT}
+auth_key=${DNS_CF_KEY}
+zone_id=${DNS_CF_ZONE}
+
+case $action in
+  add)
+    echo "cf: request add to api: zones/$zone_id/dns_records"
+    curl=$(curl -s -X POST "$endpoint/zones/$zone_id/dns_records" \
+        -H "X-Auth-Email: $auth_email" \
+        -H "X-Auth-Key: $auth_key" \
+        -H "Content-Type: application/json" -d '{"type":"TXT","name":"'$domain'","content":"\"'$content'\"","ttl":60,"priority":10,"proxied":false}' \
+      2>&1)
+    echo "cf: curl response: $curl"
+    echo "---"
+
+    ident=$(echo $curl | awk -F "id" '{print $2}' | awk -F '"' '{print $3}')
+    if [ -z "$ident" ]; then
+       echo "cf: stopped, \$ident is empty"
+       exit 1
+    fi
+
+    echo "cf: add record ok, ident: $ident"
+    echo "$ident" > "./tmp-$3.ident"
+    echo "---"
+  ;;
+
+  delete)
+    ident=$(cat "./tmp-$3.ident")
+    echo "cf: request delete to api: zones/$zone_id/dns_records/$ident"
+
+    curl=$(curl -s -X DELETE "$endpoint/zones/$zone_id/dns_records/$ident" \
+      -H "X-Auth-Email: $auth_email" \
+      -H "X-Auth-Key: $auth_key" 2>&1)
+    echo "curl response: $curl"
+    echo "---"
+
+    rm -f "./tmp-$3.ident"
+  ;;
+
+  *)
+    echo "cf: nothing"
+  ;;
+esac
+
+exit 0

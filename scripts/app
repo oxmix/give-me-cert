@@ -1,0 +1,21 @@
+#!/usr/bin/env ash
+set -e
+
+if [[ "$CREATE_DHPARAM" = "true" ]]; then
+  printf "Genrsa dhparam: "
+  if [[ -f dhparam.key ]]; then
+    echo "exists"
+  else
+    openssl dhparam -out dhparam.key 4096;
+    echo "ok"
+  fi
+fi
+
+if ! [[ -s /certs/domain.key ]] || ! [[ -s /certs/domain.pem ]]; then
+  /scripts/init
+fi
+
+while true; do
+  /scripts/renew
+  sleep 21600 # 6 hours
+done

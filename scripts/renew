@@ -1,0 +1,21 @@
+#!/usr/bin/env ash
+set -e
+
+echo "Launch renew in $(date +'%Y.%m.%d %H:%M:%S')"
+cd /certs
+
+if openssl x509 -checkend $((86400 * 80)) -noout -in domain.pem
+then
+  echo "Certificate is good!"
+  openssl x509 -dates -noout -in domain.pem
+else
+  API=""
+  if [[ "$DNS_SERVICE" = "cloudflare" ]]; then
+    API="/scripts/api-cf"
+  fi
+  if [[ "$DNS_SERVICE" = "cloudnetip" ]]; then
+    API="/scripts/api-cn"
+  fi
+  /scripts/acme sign -l dns-01 -P $API -a account.key -c domain.crt -f domain.pem -r domain.csr
+  echo "Done renew in $(date +'%Y.%m.%d %H:%M:%S')"
+fi

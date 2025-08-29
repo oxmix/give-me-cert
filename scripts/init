@@ -1,0 +1,45 @@
+#!/usr/bin/env ash
+set -e
+
+: "${DOMAIN:?DOMAIN must be set}"
+DOMAIN=${DOMAIN}
+
+ALT_NAMES="DNS:$DOMAIN"
+for sub in ${DOMAINS_WILDCARD//,/ }; do
+  ALT_NAMES="$ALT_NAMES,DNS:$sub"
+done
+
+echo "Starting init certs for domains: $ALT_NAMES"
+cd /certs
+
+printf "Genrsa account key: "
+if [[ -f account.key ]]; then
+  echo "exists"
+else
+#  umask 0177
+  openssl genrsa -out account.key 4096
+  echo "ok"
+#  umask 0022
+  printf "Registering account key: "
+  /scripts/acme register -a account.key -e placeholder@$DOMAIN
+fi
+
+printf "Genrsa domain key: "
+if ! [[ -s domain.key ]] || ! [[ -s domain.pem ]]; then
+  openssl genrsa -out domain.key 2048;
+  echo "ok"
+
+  printf "Genrsa temporary domain crt: "
+  openssl req -x509 -new -nodes -key domain.key -sha256 -days 1 \
+    -subj "/CN=$DOMAIN" -reqexts SAN \
+    -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$ALT_NAMES")) \
+    -out domain.pem
+  echo "ok"
+else
+  echo "exists"
+fi
+
+printf "Genreq domain: "
+openssl req -new -sha512 -key domain.key -subj "/CN=$DOMAIN" -reqexts SAN \
+  -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$ALT_NAMES")) > domain.csr
+echo "ok"

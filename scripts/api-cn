@@ -1,0 +1,47 @@
+#!/usr/bin/env sh
+
+action=$1
+domain=$2
+content=$3
+endpoint="https://cloudnetip.com/api/dns"
+key=${DNS_NETIP_KEY}
+
+case $action in
+  add)
+    echo "cn: request add to api"
+    curl=$(curl -s -X POST $endpoint \
+      -H "X-Key: $key" \
+      -H "Content-Type: application/json" -d '{"type":"TXT","name":"'$domain'","content":"'$content'"}' \
+    2>&1)
+
+    ident=$(echo $curl | awk -F "id" '{print $2}' | awk -F '"' '{print $3}')
+    if [ -z "$ident" ]; then
+       echo "cn: stopped, \$ident is empty"
+       exit 1
+    fi
+
+    echo "cn: add record ok, ident: $ident"
+    echo "$ident" > "./tmp-$3.ident"
+    echo "---"
+  ;;
+
+  delete)
+    ident=$(cat "./tmp-$3.ident")
+    echo "cn: request delete to api: ?id=$ident"
+
+    curl=$(curl -s -X DELETE "$endpoint?id=$ident" \
+      -H "X-Key: $key" \
+      -H "Content-Type: application/json" \
+    2>&1)
+    echo "cn: curl response: $curl"
+    echo "---"
+
+    rm -f "./tmp-$3.ident"
+  ;;
+
+  *)
+    echo "cn: nothing"
+  ;;
+esac
+
+exit 0
