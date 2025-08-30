@@ -9,6 +9,11 @@ for sub in ${DOMAINS_WILDCARD//,/ }; do
   ALT_NAMES="$ALT_NAMES,DNS:$sub"
 done
 
+OWNER_EMAIL="placeholder@$DOMAIN"
+if [ -n "$EMAIL_OWNER_DOMAIN" ]; then
+    OWNER_EMAIL="$EMAIL_OWNER_DOMAIN"
+fi
+
 echo "Starting init certs for domains: $ALT_NAMES"
 cd /certs
 
@@ -21,7 +26,7 @@ else
   echo "ok"
 #  umask 0022
   printf "Registering account key: "
-  /scripts/acme register -a account.key -e placeholder@$DOMAIN
+  /scripts/acme register -a account.key -e $OWNER_EMAIL
 fi
 
 printf "Genrsa domain key: "

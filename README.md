@@ -26,11 +26,14 @@ DOMAIN=my-domain.com
 # set up subdomains of for your domain
 DOMAINS_WILDCARD=*.my-domain.com,one.two.my-domain.com,*.three.my-domain.com
 
-# not necessary: creating dhparam.key
-CREATE_DHPARAM=false
-
 # select dns service: cloudflare or cloudnetip
 DNS_SERVICE=cloudflare
+
+# not necessary: if no set then used placeholder@{DOMAIN}
+EMAIL_OWNER_DOMAIN=
+
+# not necessary: creating dhparam.key (long time execution, need wait)
+CREATE_DHPARAM=false
 
 # ----------
 
@@ -54,10 +57,17 @@ EOF
 
 3. Next, start the service `./run`
 
-> After that, certs will appear in the folder `./certs` and the service will automatically keep up-to-date certificates
+> After that, the certificates will appear in the ./certs folder, and the service will automatically keep them up to date
+> 
+> Checks validity every 6 hours and signs if 10 days remain
 >
 > Key: `./certs/domain.key`
+> 
 > Pub: `./certs/domain.pem`
+>
+> DHParam: `./certs/dhparam.key` (if exist)
+
+---
 
 ### How to reinit when changed `DOMAIN` or `DOMAINS_WILDCARD`:
 
@@ -65,6 +75,8 @@ EOF
 2. edit `nano .env`
 3. exec `rm certs/domain.pem`
 4. exec `./run`
+
+---
 
 ### How to hard reset:
 
